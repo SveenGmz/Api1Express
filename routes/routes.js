@@ -1,326 +1,181 @@
-const sql = require('mysql');
+//* cargue la conexion del grupo MySQL
+const { request, response } = require('express');
+const pool = require('../data/config');
 
-
+//*ruta de la app
 const router = app => {
-    //Mostrar mensaje de bienvenida en root
-    app.get('/', (request, response) => {
-        response.send({
-            message: 'Bienvenido a Node.js Express REST API con MSSQL'
-        });
+//*mostrar mensaje de bienvenida de root
+app.get('/', (request, response) =>{
+    response.send({
+        message: 'Bienvenido a Node.js Express REST API!'
+    });
+});
+//? querys de la tabla usuarios
+//todo Mostrar todos los usuarios
+app.get('/users', (request, response) => {
+pool.query('SELECT * FROM users',
+(error, result) => {
+    if (error) throw error;
+    response.send(result);
+});
+});
+
+
+//todo Mostrar un solo usuario por ID
+app.get('/users/:ID', (request, response) => {
+    const ID = request.params.ID;
+    
+    pool.query('SELECT * FROM users WHERE ID = ?', 
+    ID, (error, result) => {
+        if (error) throw error;
+        response.send(result);
+    });
     });
 
-    //Mostrar todos los usuarios
-    app.get('/users', async (request, response) => {
-        try {
-            const pool = await sql.connect('./data/config');
-            const result = await pool.request().query('SELECT * FROM users');
-            response.send(result.recordset);
-        } catch (error) {
-            console.error(error);
-            response.status(500).send('Error de servidor');
-        }
+
+
+//todo Agregar un nuevo usuario
+app.post('/users', (request, response) => {
+    pool.query('INSERT INTO users SET ?', request.body, (error, 
+        result) => {
+        if (error) throw error;
+
+        response.status(201).send(`User added with ID: ${result.insertId}`);
+    });
+});
+
+//todo Actualizar un usuario existente
+app.put('/users/:ID', (request, response) => {  
+    const ID = request.params.ID; 
+    pool.query('UPDATE users SET ? WHERE ID = ?', [request.body, ID], (error, result) => {
+    
+        if (error) throw error;
+        response.send('User update successfully.');
+    });
+});
+
+//todo Eliminar usuario
+app.delete(`/users/:ID`, (request, response) => {
+const ID = request.params.ID;
+
+pool.query(`DELETE FROM users WHERE ID =?`, ID, (error, result) => {
+    if (error) throw error;
+    response.send('User Deleted');
+});
+});
+
+
+
+//? ----------------------------------------------------querys de tabla productos -----------------------------------------------------------
+//todo Mostrar todos los productos
+app.get('/productos', (request, response) => {
+pool.query('SELECT * FROM productos',
+(error, result) => {
+    if (error) throw error;
+    response.send(result);
+});
+});
+
+
+//todo Mostrar un solo producto por ID
+app.get('/productos/:IdProd', (request, response) => {
+    const IdProd = request.params.IdProd;
+    
+    pool.query('SELECT * FROM users WHERE ID = ?', 
+    ID, (error, result) => {
+        if (error) throw error;
+        response.send(result);
+    });
     });
 
-    // Mostrar un solo usuario por ID
-    app.get('/users/:id', async (request, response) => {
-        const id = request.params.id;
 
-        try {
-            const pool = await sql.connect('./data/config');
-            const result = await pool
-                .request()
-                .input('id', sql.Int, id) // Declarar el parámetro @id
-                .query('SELECT * FROM users WHERE idusers = @id');
-            
-            response.send(result.recordset);
-        } catch (error) {
-            console.error(error);
-            response.status(500).send('Error de servidor');
-        }
+
+//todo Agregar un nuevo producto
+app.post('/productos', (request, response) => {
+    pool.query('INSERT INTO productos SET ?', request.body, (error, 
+        result) => {
+        if (error) throw error;
+
+        response.status(201).send(`Product added with IdProd: ${result.insertIdProd}`);
     });
+});
 
-    //Agregar un nuevo usuario
-    app.post('/users', async (request, response) => {
-        const newUser = request.body;
-
-        try {
-            const pool = await sql.connect('./data/config');
-
-            const request = pool.request();
-            
-            // Asignar parámetros individualmente
-            request.input('userNombre', sql.VarChar(45), newUser.userNombre);
-            request.input('userEdad', sql.Int, newUser.userEdad);
-            request.input('userEmail', sql.VarChar(320), newUser.userEmail);
-            request.input('userPass', sql.VarChar(128), newUser.userPass);
-
-            const result = await request.query('INSERT INTO users (userNombre, userEdad, userEmail, userPass) OUTPUT INSERTED.idusers VALUES (@userNombre, @userEdad, @userEmail, @userPass)');
-
-            const insertId = result.recordset[0].idusers;
-
-            response.status(201).send(`User added with ID: ${insertId}`);
-        } catch (error) {
-            console.error(error);
-            response.status(500).send('Error de servidor');
-        }
+//todo Actualizar un producto existente
+app.put('/productos/:IdProd', (request, response) => {  
+    const IdProd = request.params.IdProd; 
+    pool.query('UPDATE productos SET ? WHERE IdProd = ?', [request.body, IdProd], (error, result) => {
+    
+        if (error) throw error;
+        response.send('Product update successfully.');
     });
+});
 
-    // Ejemplo de petición POST
-    // {
-    //     "userNombre": "jorge",
-    //     "userEdad": 33,
-    //     "userEmail": "jorge@email.com",
-    //     "userPass": "contraseña"
-    // }
+//todo Eliminar producto
+app.delete(`/productos/:IdProd`, (request, response) => {
+const IdProd = request.params.IdProd;
 
-    // Actualizar un usuario existente
-    app.put('/users/:id', async (request, response) => {
-        try {
-            const id = request.params.id;
-            const newUser = request.body;
+pool.query(`DELETE FROM productos WHERE IdProd =?`, IdProd, (error, result) => {
+    if (error) throw error;
+    response.send('Product Deleted');
+});
+});
 
-            const pool = await sql.connect('./data/config');
 
-            const result = await pool
-                .request()
-                .input('idusers', sql.Int, id)
-                .input('userNombre', sql.VarChar(45), newUser.userNombre)
-                .input('userEdad', sql.Int, newUser.userEdad)
-                .input('userEmail', sql.VarChar(320), newUser.userEmail)
-                .input('userPass', sql.VarChar(128), newUser.userPass)
-                .query('UPDATE users SET userNombre = @userNombre, userEdad = @userEdad, userEmail = @userEmail, userPass = @userPass WHERE idusers = @idusers');
 
-            response.send('User updated successfully');
-        } catch (error) {
-            console.error(error);
-            response.status(500).send('Error de servidor');
-        }
+//? ----------------------------------------------------querys de tabla ventas -----------------------------------------------------------
+//todo Mostrar todos los productos
+app.get('/ventas', (request, response) => {
+    pool.query('SELECT * FROM ventas',
+    (error, result) => {
+        if (error) throw error;
+        response.send(result);
     });
-
-    // Eliminar un usuario
-    app.delete('/users/:id', async (request, response) => {
-        const id = request.params.id;
-
-        try {
-            const pool = await sql.connect('./data/config');
-
-            const result = await pool
-                .request()
-                .input('id', sql.Int, id)
-                .query('DELETE FROM users WHERE idusers = @id');
-
-            response.send('User deleted');
-        } catch (error) {
-            console.error(error);
-            response.status(500).send('Error de servidor');
-        }
     });
     
-    //-----------------------------------------------------------------------------------------------------------------------Productos
-    //Mostrar todos los productos
-    app.get('/products', async (request, response) => {
-        try {
-            const pool = await sql.connect('./data/config');
-            const result = await pool.request().query('SELECT * FROM products');
-            response.send(result.recordset);
-        } catch (error) {
-            console.error(error);
-            response.status(500).send('Error de servidor');
-        }
+    
+    //todo Mostrar un solo producto por ID
+    app.get('/ventas/:IdVenta', (request, response) => {
+        const IdVenta = request.params.IdVenta;
+        
+        pool.query('SELECT * FROM ventas WHERE IdVenta = ?', 
+        IdVenta, (error, result) => {
+            if (error) throw error;
+            response.send(result);
+        });
+        });
+    
+    
+    
+    //todo Agregar un nuevo producto
+    app.post('/ventas', (request, response) => {
+        pool.query('INSERT INTO ventas SET ?', request.body, (error, 
+            result) => {
+            if (error) throw error;
+    
+            response.status(201).send(`Sell added with IdVenta: ${result.insertIdVenta}`);
+        });
     });
-
-    // Mostrar un solo producto por ID
-    app.get('/products/:id', async (request, response) => {
-        const id = request.params.id;
-
-        try {
-            const pool = await sql.connect('./data/config');
-            const result = await pool
-                .request()
-                .input('id', sql.Int, id) // Declarar el parámetro @id
-                .query('SELECT * FROM products WHERE idproduct = @id');
-            
-            response.send(result.recordset);
-        } catch (error) {
-            console.error(error);
-            response.status(500).send('Error de servidor');
-        }
+    
+    //todo Actualizar un producto existente
+    app.put('/ventas/:IdVenta', (request, response) => {  
+        const IdVenta = request.params.IdVenta; 
+        pool.query('UPDATE ventas SET ? WHERE IdVenta = ?', [request.body, IdVenta], (error, result) => {
+        
+            if (error) throw error;
+            response.send('Sell update successfully.');
+        });
     });
-
-    //Agregar un nuevo usuario
-    app.post('/products', async (request, response) => {
-        const newProduct = request.body;
-
-        try {
-            const pool = await sql.connect('./data/config');
-
-            const request = pool.request();
-            
-            // Asignar parámetros individualmente
-            request.input('productNombre', sql.VarChar(45), newProduct.productNombre);
-            request.input('productDescription', sql.VarChar(320), newProduct.productDescription);
-            request.input('productPrecio', sql.Float, newProduct.productPrecio);
-            request.input('productExistencias', sql.Int, newProduct.productExistencias);                        
-            
-            const result = await request.query('INSERT INTO products (productNombre, productDescription, productPrecio, productExistencias) OUTPUT INSERTED.idproduct VALUES (@productNombre, @productDescription, @productPrecio, @productExistencias)');
-
-            const insertId = result.recordset[0].idproduct;
-
-            response.status(201).send(`Product added with ID: ${insertId}`);
-        } catch (error) {
-            console.error(error);
-            response.status(500).send('Error de servidor');
-        }
+    
+    //todo Eliminar producto
+    app.delete(`/ventas/:IdVenta`, (request, response) => {
+    const IdVenta = request.params.IdVenta;
+    
+    pool.query(`DELETE FROM ventas WHERE IdVenta =?`, IdVenta, (error, result) => {
+        if (error) throw error;
+        response.send('Sell Deleted');
     });
-
-    // Actualizar un producto existente
-    app.put('/products/:id', async (request, response) => {
-        try {
-            const id = request.params.id;
-            const newProduct = request.body;
-
-            const pool = await sql.connect('./data/config');
-
-            const result = await pool
-                .request()
-                .input('idproduct', sql.Int, id)
-                .input('productNombre', sql.VarChar(45), newProduct.productNombre)
-                .input('productDescription', sql.VarChar(320), newProduct.productDescription)
-                .input('productPrecio', sql.Float, newProduct.productPrecio)
-                .input('productExistencias', sql.Int, newProduct.productExistencias)
-
-                .query('UPDATE products SET productNombre = @productNombre, productDescription = @productDescription, productPrecio = @productPrecio, productExistencias = @productExistencias WHERE idproduct = @idproduct');
-
-            response.send('Product updated successfully');
-        } catch (error) {
-            console.error(error);
-            response.status(500).send('Error de servidor');
-        }
     });
-
-    // Eliminar un producto
-    app.delete('/products/:id', async (request, response) => {
-        const id = request.params.id;
-
-        try {
-            const pool = await sql.connect('./data/config');
-
-            const result = await pool
-                .request()
-                .input('id', sql.Int, id)
-                .query('DELETE FROM products WHERE idproduct = @id');
-
-            response.send('Product deleted');
-        } catch (error) {
-            console.error(error);
-            response.status(500).send('Error de servidor');
-        }
-    });
-    //-----------------------------------------------------------------------------------------------------------------------/Productos
-
-    //-----------------------------------------------------------------------------------------------------------------------Ventas
-    //Mostrar todas las ventas
-    app.get('/ventas', async (request, response) => {
-        try {
-            const pool = await sql.connect('./data/config');
-            const result = await pool.request().query('SELECT * FROM ventas');
-            response.send(result.recordset);
-        } catch (error) {
-            console.error(error);
-            response.status(500).send('Error de servidor');
-        }
-    });
-
-    // Mostrar una sola venta por ID
-    app.get('/ventas/:id', async (request, response) => {
-        const id = request.params.id;
-
-        try {
-            const pool = await sql.connect('./data/config');
-            const result = await pool
-                .request()
-                .input('id', sql.Int, id) // Declarar el parámetro @id
-                .query('SELECT * FROM ventas WHERE idventa = @id');
-            
-            response.send(result.recordset);
-        } catch (error) {
-            console.error(error);
-            response.status(500).send('Error de servidor');
-        }
-    });
-
-    //Agregar un nuevo usuario
-    app.post('/ventas', async (request, response) => {
-        const newVenta = request.body;
-
-        try {
-            const pool = await sql.connect('./data/config');
-
-            const request = pool.request();
-            
-            // Asignar parámetros individualmente
-            request.input('idusers', sql.Int, newVenta.idusers);
-            request.input('idproduct', sql.Int, newVenta.idproduct);
-            request.input('ventaTotal', sql.Float, newVenta.ventaTotal);
-            request.input('ventaTipoPago', sql.VarChar(45), newVenta.ventaTipoPago);            
-            
-            const result = await request.query('INSERT INTO ventas (idusers, idproduct, ventaTotal, ventaTipoPago) OUTPUT INSERTED.idventa VALUES (@idusers, @idproduct, @ventaTotal, @ventaTipoPago)');
-
-            const insertId = result.recordset[0].idventa;
-
-            response.status(201).send(`Venta added with ID: ${insertId}`);
-        } catch (error) {
-            console.error(error);
-            response.status(500).send('Error de servidor');
-        }
-    });
-
-    // Actualizar una venta existente
-    app.put('/ventas/:id', async (request, response) => {
-        try {
-            const id = request.params.id;
-            const newVenta = request.body;
-
-            const pool = await sql.connect('./data/config');
-
-            const result = await pool
-                .request()
-                .input('idventa', sql.Int, id)
-                .input('idusers', sql.Int, newVenta.idusers)
-                .input('idproduct', sql.Int, newVenta.idproduct)
-                .input('ventaTotal', sql.Float, newVenta.ventaTotal)
-                .input('ventaTipoPago', sql.VarChar(45), newVenta.ventaTipoPago)
-
-                .query('UPDATE ventas SET idusers = @idusers, idproduct = @idproduct, ventaTotal = @ventaTotal, ventaTipoPago = @ventaTipoPago WHERE idventa = @idventa');
-
-            response.send('Venta updated successfully');
-        } catch (error) {
-            console.error(error);
-            response.status(500).send('Error de servidor');
-        }
-    });
-
-    // Eliminar un producto
-    app.delete('/ventas/:id', async (request, response) => {
-        const id = request.params.id;
-
-        try {
-            const pool = await sql.connect('./data/config');
-
-            const result = await pool
-                .request()
-                .input('id', sql.Int, id)
-                .query('DELETE FROM ventas WHERE idventa = @id');
-
-            response.send('Venta deleted');
-        } catch (error) {
-            console.error(error);
-            response.status(500).send('Error de servidor');
-        }
-    });
-    //-----------------------------------------------------------------------------------------------------------------------/Ventas
-
+    
 }
 
-//Exportar el router
 module.exports = router;
