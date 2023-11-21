@@ -1,4 +1,4 @@
-//require package and set port
+
 const express = require('express');
 const port = 3002;
 

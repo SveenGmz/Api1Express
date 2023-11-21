@@ -1,9 +1,10 @@
 const sql = require('mysql')
 
 const sqlConfig = {
-  user: 'root',
-  password: 'root',
-  database: '',
+  host:'localhost',
+  user: 'iram',
+  password: 'CacatuaF456',
+  database: 'prueba',
   server: '',
   pool: {
     max: 10,
